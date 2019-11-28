@@ -5,61 +5,203 @@ using System.Text;
 using System.Threading.Tasks;
 using RemoteApi;
 using Logic.Domain;
-
+using Repositories;
+using AutoMapper;
+using Log;
 namespace Logic
 {
+    /// <summary>
+    /// Class implement logic for geolocation domain
+    /// </summary>
     public class GeolocationLogic : IGeolocationLogic
     {
         IIpstackApi _ipstackApi;
-        public GeolocationLogic(IIpstackApi ipstackApi)
+        IMapper _mapper;
+        /// <summary>
+        /// Constructor with DI
+        /// </summary>
+        /// <param name="ipstackApi">DI class for remote API</param>
+        /// <param name="mapper">DI class for mapping data</param>
+        public GeolocationLogic(IIpstackApi ipstackApi, IMapper mapper)
         {
             _ipstackApi = ipstackApi ?? throw new ArgumentNullException(nameof(ipstackApi));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
-
+        /// <summary>
+        /// Add geolocation data to database
+        /// </summary>
+        /// <param name="data">geolocation data</param>
+        /// <returns>status of operation with added geolocation data</returns>
         public GeolocationDomainResult AddValue(GeolocationDomain data)
         {
-            throw new NotImplementedException();
+            GeolocationDomainResult geolocationDomainResult = new GeolocationDomainResult();
+            geolocationDomainResult.Succesful = true;
+            using (var db = new Entities())
+            {
+                try
+                {
+                    geolocations g = new geolocations();
+                    g = db.geolocations.Where(p => p.ip == data.Ip).FirstOrDefault();
+                    if (g == null)
+                    {
+                        g = new geolocations();
+                        _mapper.Map(data,g);
+                        db.geolocations.Add(g);
+                        db.SaveChanges();
+                        geolocationDomainResult.Geolocation = new GeolocationDomain();
+                        _mapper.Map(g, geolocationDomainResult.Geolocation);
+                    }
+                    else
+                    {
+                        geolocationDomainResult.ErrorCode = 302;
+                        geolocationDomainResult.ErrorMsg = "The given ip address exist.";
+                        geolocationDomainResult.Succesful = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log.Error(ex);
+                }
+            }
+            return geolocationDomainResult;
         }
-
+        /// <summary>
+        /// Remove geolocation information from database
+        /// </summary>
+        /// <param name="ipAddress">Ip address or URL</param>
+        /// <returns>status of operation with deleted geolocation data</returns>
         public GeolocationDomainResult DelteValue(string ipAddress)
         {
-            throw new NotImplementedException();
+            GeolocationDomainResult geolocationDomainResult = new GeolocationDomainResult();
+            geolocationDomainResult.Succesful = true;
+            using (var db = new Entities())
+            {
+                try
+                {
+                    geolocations g = new geolocations();
+                    g = db.geolocations.Where(p => p.ip == ipAddress).FirstOrDefault();
+                    if (g != null)
+                    {
+                        geolocationDomainResult.Geolocation = new GeolocationDomain();
+                        _mapper.Map(g, geolocationDomainResult.Geolocation);
+                        db.geolocations.Remove(g);
+                        db.SaveChanges();
+                    }
+                    else
+                    {
+                        geolocationDomainResult.ErrorCode = 404;
+                        geolocationDomainResult.ErrorMsg = "The given ip address doesn't exist.";
+                        geolocationDomainResult.Succesful = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log.Error(ex);
+                }
+            }
+            return geolocationDomainResult;
         }
-
+        /// <summary>
+        /// Method allow collect information about geolocation.
+        /// If @ipAddress exist in database the collection is get from there. 
+        /// If @ipAddress not exist in database remote API is called and resoult is stored in database.
+        /// </summary>
+        /// <param name="ipAddress">Ip addres or URL</param>
+        /// <returns>status of operation with collected geolocation data</returns>
         public GeolocationDomainResult GetValue(string ipAddress)
         {
-            List<string> ipAddresses = new List<string> { ipAddress };
-            var response = _ipstackApi.Get(ipAddresses);
-            GeolocationDomainResult geolocationDomain = new GeolocationDomainResult();
-            geolocationDomain.Status.Succesful = response.ipstackErrorData.success;
-            
-            #region MapppingResponse 
-            if (geolocationDomain.Status.Succesful)
+
+
+            GeolocationDomainResult geolocationDomainResult = new GeolocationDomainResult();
+            geolocationDomainResult.Succesful = true;
+
+            #region ReadFromDataBase
+            using (var db = new Entities())
             {
-                geolocationDomain.City = response.ipstackData.city;
-                geolocationDomain.ContinentCode = response.ipstackData.continent_code;
-                geolocationDomain.ContinentName= response.ipstackData.continent_name;
-                geolocationDomain.Ip= response.ipstackData.ip;
-                geolocationDomain.CountryCode = response.ipstackData.country_code;
-                geolocationDomain.Latitude= response.ipstackData.latitude;
-                geolocationDomain.Longitude= response.ipstackData.longitude;
-                geolocationDomain.RegionCode= response.ipstackData.region_code;
-                geolocationDomain.RegionName= response.ipstackData.region_name;
-                geolocationDomain.Type= response.ipstackData.type;
-                geolocationDomain.Zip= response.ipstackData.zip;
-            }
-            else
-            {
-                geolocationDomain.Status.ErrorMsg = response.ipstackErrorData.error.info;
+                try
+                {
+                    geolocations g = new geolocations();
+                    g = db.geolocations.Where(p => p.ip == ipAddress).FirstOrDefault();
+                    if (g != null)
+                    {
+                        geolocationDomainResult.Geolocation = new GeolocationDomain();
+                        _mapper.Map(g, geolocationDomainResult.Geolocation);
+                        return geolocationDomainResult;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log.Error(ex);
+                }
             }
             #endregion
 
-            return geolocationDomain;
+            #region CallRemoteApi
+            List<string> ipAddresses = new List<string> { ipAddress };
+            var response = _ipstackApi.Get(ipAddresses);
+            
+            if (geolocationDomainResult.Succesful)
+            {
+                geolocationDomainResult.Geolocation = new GeolocationDomain();
+                _mapper.Map(response.ipstackData, geolocationDomainResult.Geolocation);
+                using (var db = new Entities())
+                {
+                    try
+                    {
+                        db.geolocations.Add(_mapper.Map<geolocations>(geolocationDomainResult.Geolocation));
+                        db.SaveChanges();
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Log.Error(ex);
+                    }
+                }
+            }
+            else
+            {
+                geolocationDomainResult.ErrorMsg = "Remote api IpStack returend error: " + response.ipstackErrorData.error.info;
+                Logger.Log.Error(geolocationDomainResult.ErrorMsg);
+            }
+            #endregion
+
+            return geolocationDomainResult;
         }
 
-        public GeolocationDomainResult PutValue(string ipAddress, GeolocationDomain data)
+        /// <summary>
+        /// Update existing geolocation in database
+        /// </summary>
+        /// <param name="data">geolocation data</param>
+        /// <returns>status of operation with updated geolocation data</returns>
+        public GeolocationDomainResult PutValue(GeolocationDomain data)
         {
-            throw new NotImplementedException();
+            GeolocationDomainResult geolocationDomainResult = new GeolocationDomainResult();
+            geolocationDomainResult.Succesful = true;
+            using (var db = new Entities())
+            {
+                try
+                {
+                    geolocations g = new geolocations();
+                    g = db.geolocations.Where(p => p.ip == data.Ip).FirstOrDefault();
+                    if (g != null)
+                    {
+                        geolocationDomainResult.Geolocation = new GeolocationDomain();
+                        geolocationDomainResult.Geolocation = data;
+                        _mapper.Map(data, g);
+                        db.SaveChanges();
+                    }
+                    else
+                    {
+                        geolocationDomainResult.ErrorCode = 404;
+                        geolocationDomainResult.ErrorMsg = "The given ip address doesn't exist.";
+                        geolocationDomainResult.Succesful = false;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Log.Error(ex);
+                }
+            }
+            return geolocationDomainResult;
         }
     }
 }

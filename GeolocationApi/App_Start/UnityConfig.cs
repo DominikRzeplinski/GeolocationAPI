@@ -3,6 +3,8 @@ using Unity;
 using Unity.WebApi;
 using Logic;
 using RemoteApi;
+using AutoMapper;
+using Log;
 
 namespace GeolocationApi
 {
@@ -18,6 +20,8 @@ namespace GeolocationApi
             // e.g. container.RegisterType<ITestService, TestService>();
             container.RegisterType<IGeolocationLogic, GeolocationLogic>();
             container.RegisterType<IIpstackApi, IpstackApi>();
+            container.RegisterInstance<IMapper>(AutomapperConfig.CreateConfiguration().CreateMapper());
+            container.RegisterType<ILogger, NLogLogger>();
             GlobalConfiguration.Configuration.DependencyResolver = new UnityDependencyResolver(container);
         }
     }

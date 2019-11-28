@@ -6,6 +6,9 @@ using System.Threading.Tasks;
 
 namespace Logic.Domain
 {
+    /// <summary>
+    /// DTO for geolocation data
+    /// </summary>
     public class GeolocationDomain
     {
         public string Ip { get; set; }

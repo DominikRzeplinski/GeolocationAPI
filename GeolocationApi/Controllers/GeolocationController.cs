@@ -10,6 +10,9 @@ using Newtonsoft.Json;
 
 namespace GeolocationApi.Controllers
 {
+    /// <summary>
+    /// Controller for geolocation domain
+    /// </summary>
     public class GeolocationController : ApiController
     {
 
@@ -22,15 +25,19 @@ namespace GeolocationApi.Controllers
         }
         
 
-        // GET api/values/192.168.1.1
+        /// <summary>
+        /// Collect geolocation information
+        /// </summary>
+        /// <param name="ipAddress">Ip Address or Url</param>
+        /// <returns></returns>
         public IHttpActionResult Get(string ipAddress)
         {
             GeolocationDomainResult geolocationDomain = _geolocationLogic.Value.GetValue(ipAddress);
-            if (!geolocationDomain.Status.Succesful)
+            if (!geolocationDomain.Succesful)
             {
                 var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
                 {
-                    Content = new StringContent(geolocationDomain.Status.ErrorMsg)
+                    Content = new StringContent(geolocationDomain.ErrorMsg)
                 };
                 throw new HttpResponseException(resp);
             }
@@ -42,28 +49,34 @@ namespace GeolocationApi.Controllers
         public IHttpActionResult Post([FromBody]GeolocationDomain data)
         {
             GeolocationDomainResult geolocationDomain = _geolocationLogic.Value.AddValue(data);
-            if (!geolocationDomain.Status.Succesful)
+            if (!geolocationDomain.Succesful)
             {
-                var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                if (geolocationDomain.ErrorCode == 302)
                 {
-                    Content = new StringContent(geolocationDomain.Status.ErrorMsg)
-                };
-                throw new HttpResponseException(resp);
+                    return RedirectToRoute("GeolocationApiGet", new { controller = "Geolocation", ipAddress = data.Ip });
+                }
+                else {
+                    var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
+                    {
+                        Content = new StringContent(geolocationDomain.ErrorMsg)
+                    };
+                    throw new HttpResponseException(resp);
+                }
             }
             return Json(geolocationDomain);
         }
 
         // PUT api/values/192.168.1.1
-        public IHttpActionResult Put(string ipAddress, [FromBody]GeolocationDomain data)
+        public IHttpActionResult Put([FromBody]GeolocationDomain data)
         {
-            GeolocationDomainResult geolocationDomain = _geolocationLogic.Value.PutValue(ipAddress, data);
-            if (!geolocationDomain.Status.Succesful)
+            GeolocationDomainResult geolocationDomain = _geolocationLogic.Value.PutValue(data);
+            if (!geolocationDomain.Succesful)
             {
-                if (geolocationDomain.Status.ErrorCode == 404)
+                if (geolocationDomain.ErrorCode == 404)
                 {
                     var resp = new HttpResponseMessage(HttpStatusCode.NotFound)
                     {
-                        Content = new StringContent(geolocationDomain.Status.ErrorMsg)
+                        Content = new StringContent(geolocationDomain.ErrorMsg)
                     };
                     throw new HttpResponseException(resp);
                 }
@@ -71,7 +84,7 @@ namespace GeolocationApi.Controllers
                 {
                     var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
                     {
-                        Content = new StringContent(geolocationDomain.Status.ErrorMsg)
+                        Content = new StringContent(geolocationDomain.ErrorMsg)
                     };
                     throw new HttpResponseException(resp);
                 }
@@ -84,13 +97,13 @@ namespace GeolocationApi.Controllers
         public IHttpActionResult Delete(string ipAddress)
         {
             GeolocationDomainResult geolocationDomain = _geolocationLogic.Value.DelteValue(ipAddress);
-            if (!geolocationDomain.Status.Succesful)
+            if (!geolocationDomain.Succesful)
             {
-                if (geolocationDomain.Status.ErrorCode == 404)
+                if (geolocationDomain.ErrorCode == 404)
                 {
                     var resp = new HttpResponseMessage(HttpStatusCode.NotFound)
                     {
-                        Content = new StringContent(geolocationDomain.Status.ErrorMsg)
+                        Content = new StringContent(geolocationDomain.ErrorMsg)
                     };
                     throw new HttpResponseException(resp);
                 }
@@ -98,7 +111,7 @@ namespace GeolocationApi.Controllers
                 {
                     var resp = new HttpResponseMessage(HttpStatusCode.InternalServerError)
                     {
-                        Content = new StringContent(geolocationDomain.Status.ErrorMsg)
+                        Content = new StringContent(geolocationDomain.ErrorMsg)
                     };
                     throw new HttpResponseException(resp);
                 }

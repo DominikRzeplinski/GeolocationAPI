@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Net;
 using System.IO;
 using Newtonsoft.Json;
+using Log;
 
 namespace RemoteApi
 {
@@ -53,23 +54,45 @@ namespace RemoteApi
             {
                 ipstackResponse.ipstackErrorData.success = false; 
                 ipstackResponse.ipstackErrorData.error.code = -1; 
-                ipstackResponse.ipstackErrorData.error.info = ex.Message; 
+                ipstackResponse.ipstackErrorData.error.info = ex.Message;
+                Logger.Log.Error(ex);
             }
             
             return ipstackResponse;
         }
 
+        /// <summary>
+        /// Retrive api key
+        /// </summary>
+        /// <returns>api key</returns>
         private string GetAuthorisationKey()
         {
-            return System.Configuration.ConfigurationManager.AppSettings["IpstackKey"];
+            string apiKey = System.Configuration.ConfigurationManager.AppSettings["IpstackKey"];
+            if (string.IsNullOrWhiteSpace(apiKey))
+                Logger.Log.Error("Webconfig does not contain ipstack key.");
+            return apiKey;
         }
+        /// <summary>
+        /// Retrive api url
+        /// </summary>
+        /// <returns>api url</returns>
         private string GetApiUrl()
         {
-            return System.Configuration.ConfigurationManager.AppSettings["IpstackUrl"];
+            string apiUrl = System.Configuration.ConfigurationManager.AppSettings["IpstackUrl"];
+            if (string.IsNullOrWhiteSpace(apiUrl))
+                Logger.Log.Error("Webconfig does not contain ipstack url.");
+            return apiUrl;
         }
+        /// <summary>
+        /// Retrive api connection timeout
+        /// </summary>
+        /// <returns>api connection timeout</returns>
         private int GetApiTimeout()
         {
-            return Convert.ToInt32(System.Configuration.ConfigurationManager.AppSettings["IpstackTimeOut"]);
+            string apiTimeout = System.Configuration.ConfigurationManager.AppSettings["IpstackTimeOut"];
+            if (string.IsNullOrWhiteSpace(apiTimeout))
+                Logger.Log.Error("Webconfig does not contain ipstack connection timeout.");
+            return Convert.ToInt32(apiTimeout);
         }
 
     }

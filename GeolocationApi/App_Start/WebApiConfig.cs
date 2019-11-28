@@ -19,6 +19,12 @@ namespace GeolocationApi
                 routeTemplate: "api/{controller}/{id}",
                 defaults: new { id = RouteParameter.Optional }
             );
+
+            config.Routes.MapHttpRoute(
+                name: "GeolocationApiGet",
+                routeTemplate: "api/{controller}",
+                defaults: new { id = RouteParameter.Optional }
+            );
         }
     }
 }

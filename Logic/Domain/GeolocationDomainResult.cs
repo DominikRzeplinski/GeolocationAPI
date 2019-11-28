@@ -6,12 +6,11 @@ using System.Threading.Tasks;
 
 namespace Logic.Domain
 {
-    public class GeolocationDomainResult :GeolocationDomain
+    /// <summary>
+    /// Response for methods in Geolocation Domain
+    /// </summary>
+    public class GeolocationDomainResult : BaseResult
     {
-        public GeolocationDomainResult()
-        {
-            Status = new BaseResult();
-        }
-        public BaseResult Status { get; set; }
+        public GeolocationDomain Geolocation { get; set; }
     }
 }
