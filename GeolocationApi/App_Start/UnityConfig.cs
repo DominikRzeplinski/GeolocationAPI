@@ -5,6 +5,7 @@ using Logic;
 using RemoteApi;
 using AutoMapper;
 using Log;
+using Repositories;
 
 namespace GeolocationApi
 {
@@ -22,6 +23,7 @@ namespace GeolocationApi
             container.RegisterType<IIpstackApi, IpstackApi>();
             container.RegisterInstance<IMapper>(AutomapperConfig.CreateConfiguration().CreateMapper());
             container.RegisterType<ILogger, NLogLogger>();
+            container.RegisterType<IGeolocationsRepositories, GeolocationsRepositories>();
             GlobalConfiguration.Configuration.DependencyResolver = new UnityDependencyResolver(container);
         }
     }

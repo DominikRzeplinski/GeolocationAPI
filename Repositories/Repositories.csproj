@@ -110,6 +110,8 @@
     <Compile Include="geolocations.cs">
       <DependentUpon>GeolocationDBModel.tt</DependentUpon>
     </Compile>
+    <Compile Include="GeolocationsRepositories.cs" />
+    <Compile Include="IGeolocationsRepositories.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

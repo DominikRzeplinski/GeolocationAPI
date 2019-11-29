@@ -1,8 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using RemoteApi;
 using Logic.Domain;
 using Repositories;
@@ -17,15 +15,18 @@ namespace Logic
     {
         IIpstackApi _ipstackApi;
         IMapper _mapper;
+        IGeolocationsRepositories _geolocationsRepositories;
         /// <summary>
         /// Constructor with DI
         /// </summary>
         /// <param name="ipstackApi">DI class for remote API</param>
         /// <param name="mapper">DI class for mapping data</param>
-        public GeolocationLogic(IIpstackApi ipstackApi, IMapper mapper)
+        /// <param name="geolocationsRepositories">DI class for EF</param>
+        public GeolocationLogic(IIpstackApi ipstackApi, IMapper mapper, IGeolocationsRepositories geolocationsRepositories)
         {
             _ipstackApi = ipstackApi ?? throw new ArgumentNullException(nameof(ipstackApi));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+            _geolocationsRepositories = geolocationsRepositories ?? throw new ArgumentNullException(nameof(geolocationsRepositories));
         }
         /// <summary>
         /// Add geolocation data to database
@@ -36,7 +37,7 @@ namespace Logic
         {
             GeolocationDomainResult geolocationDomainResult = new GeolocationDomainResult();
             geolocationDomainResult.Succesful = true;
-            using (var db = new Entities())
+            using (var db = _geolocationsRepositories.GetGeolocationEntities())
             {
                 try
                 {
@@ -60,6 +61,9 @@ namespace Logic
                 }
                 catch (Exception ex)
                 {
+                    geolocationDomainResult.ErrorCode = 0;
+                    geolocationDomainResult.ErrorMsg = "Internal DataBase Error.";
+                    geolocationDomainResult.Succesful = false;
                     Logger.Log.Error(ex);
                 }
             }
@@ -74,7 +78,7 @@ namespace Logic
         {
             GeolocationDomainResult geolocationDomainResult = new GeolocationDomainResult();
             geolocationDomainResult.Succesful = true;
-            using (var db = new Entities())
+            using (var db = _geolocationsRepositories.GetGeolocationEntities())
             {
                 try
                 {
@@ -96,6 +100,9 @@ namespace Logic
                 }
                 catch (Exception ex)
                 {
+                    geolocationDomainResult.ErrorCode = 0;
+                    geolocationDomainResult.ErrorMsg = "Internal DataBase Error.";
+                    geolocationDomainResult.Succesful = false;
                     Logger.Log.Error(ex);
                 }
             }
@@ -116,7 +123,7 @@ namespace Logic
             geolocationDomainResult.Succesful = true;
 
             #region ReadFromDataBase
-            using (var db = new Entities())
+            using (var db = _geolocationsRepositories.GetGeolocationEntities())
             {
                 try
                 {
@@ -139,16 +146,21 @@ namespace Logic
             #region CallRemoteApi
             List<string> ipAddresses = new List<string> { ipAddress };
             var response = _ipstackApi.Get(ipAddresses);
-            
+            geolocationDomainResult.Succesful = response.ipstackErrorData.success;
             if (geolocationDomainResult.Succesful)
             {
                 geolocationDomainResult.Geolocation = new GeolocationDomain();
                 _mapper.Map(response.ipstackData, geolocationDomainResult.Geolocation);
-                using (var db = new Entities())
+                using (var db = _geolocationsRepositories.GetGeolocationEntities())
                 {
+                    ///Geolocation api alweys return ip not url
+                    ///in database store ip/url from input 
+                    geolocations g = new geolocations();
+                    _mapper.Map(geolocationDomainResult.Geolocation, g);
+                    g.ip = ipAddress;
                     try
                     {
-                        db.geolocations.Add(_mapper.Map<geolocations>(geolocationDomainResult.Geolocation));
+                        db.geolocations.Add(g);
                         db.SaveChanges();
                     }
                     catch (Exception ex)
@@ -176,7 +188,7 @@ namespace Logic
         {
             GeolocationDomainResult geolocationDomainResult = new GeolocationDomainResult();
             geolocationDomainResult.Succesful = true;
-            using (var db = new Entities())
+            using (var db = _geolocationsRepositories.GetGeolocationEntities())
             {
                 try
                 {
@@ -198,6 +210,9 @@ namespace Logic
                 }
                 catch (Exception ex)
                 {
+                    geolocationDomainResult.ErrorCode = 0;
+                    geolocationDomainResult.ErrorMsg = "Internal DataBase Error.";
+                    geolocationDomainResult.Succesful = false;
                     Logger.Log.Error(ex);
                 }
             }
