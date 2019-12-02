@@ -1,4 +1,4 @@
-FROM mysql:latest
+FROM mysql/mysql-server
 ENV MYSQL_ROOT_PASSWORD admin
 ENV MYSQL_DATABASE dbgeolocation
 ENV MYSQL_USER user
