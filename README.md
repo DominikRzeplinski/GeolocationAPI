@@ -12,7 +12,7 @@ docker exec app ipconfig
 output will show on what ip is running application: 
 IPv4 Address. . . . . . . . . . . :
 
-To store resoults run linux container with MySql database.  
+To store results run linux container with MySql database.  
 ip Addres of MySql database is set staticly in web.config
 docker run --name db -d -p3306:3306 dominikrzeplinski/geolocation-api:geolocationDatabase
 
